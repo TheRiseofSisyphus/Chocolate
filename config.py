@@ -9,6 +9,6 @@ REPORTS_DIR = STORAGE_DIR / "reports"
 for dir_path in [USER_FILES_DIR, REPORTS_DIR]:
     dir_path.mkdir(parents=True, exist_ok=True)
 
-BOT_TOKEN = "8021467657:AAGvNSEqyuNhiAUdV_YsYOqi-wRH7XXstww"
+BOT_TOKEN = "XXX"
 MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
 OPERATOR_PERCENT = 0.5  # 0.5% для оператора
