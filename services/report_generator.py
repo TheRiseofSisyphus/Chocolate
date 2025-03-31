@@ -1,71 +1,56 @@
 from .data_models import ExcelSheetData
-import logging
-from typing import Dict, List
-
-logger = logging.getLogger(__name__)
 
 
 class ReportGenerator:
     @staticmethod
     def format_number(value: float) -> str:
-        """Форматирует число с разделителями тысяч"""
         try:
-            if value is None:
-                return "0"
             return "{:,.2f}".format(float(value)).replace(",", " ").replace(".00", "")
-        except (ValueError, TypeError) as e:
-            logger.warning(f"Ошибка форматирования числа {value}: {e}")
-            return str(value or "0")
+        except (ValueError, TypeError):
+            return str(value)
 
     @staticmethod
-    def _generate_single_sheet(data: ExcelSheetData) -> str:
-        """Генерирует отчёт для одного листа"""
-        try:
-            report = [
-                f"\n\n=== Лист: {data.sheet_name or 'Без названия'} ===",
-                f"ФИО: {data.full_name or 'Не указано'}",
-                f"Банк: {data.bank or 'Не указан'}",
-                f"Оборот: {ReportGenerator.format_number(data.turnover)} ₽",
-                f"Выплата агенту: {ReportGenerator.format_number(data.agent_payment)} ₽"
-            ]
+    def generate(data: ExcelSheetData) -> str:
+        report = [
+            f"=== Отчет по листу: {data.sheet_name} ===",
+            f"ФИО: {data.full_name}",
+            f"Банк: {data.bank}",
+            f"Покупки, прогревы: {data.warm_up_rub}/{data.warm_up_purchases}",
+            f"Стартовый баланс: {ReportGenerator.format_number(data.start_balance)}",
+            f"Старт: {data.start_time}",
+            f"Стоп: {data.end_time}",
+            f"\nПроцент агента: {data.agent_percent}%",
+            "\n📌 Входные транзакции:"
+        ]
 
-            if data.inflows:
-                report.append("\nВходящие операции:")
-                report.extend(
-                    f"{i}. {ReportGenerator.format_number(t.amount)} ₽ (ID: {t.transaction_id or 'нет'})"
-                    for i, t in enumerate(data.inflows, 1)
-                )
+        report.extend(
+            f"{i}. {ReportGenerator.format_number(t.amount)} {t.transaction_id}"
+            for i, t in enumerate(data.inflows, 1)
+        )
 
-            return "\n".join(report)
-        except Exception as e:
-            logger.error(f"Ошибка генерации отчёта для листа {data.sheet_name}: {e}")
-            return f"\n\n⚠️ Ошибка формирования отчёта для листа {data.sheet_name}"
+        report.append("\n\n📌 Выходные транзакции:")
+        report.extend(
+            f"{i}. {ReportGenerator.format_number(t.amount)} {t.transaction_id}"
+            f"{f' ({t.commission} комса)' if t.commission else ''}"
+            for i, t in enumerate(data.outflows, 1)
+        )
 
-    @staticmethod
-    def generate_combined_report(sheets_data: Dict[str, ExcelSheetData]) -> str:
-        """Генерирует объединённый отчёт по всем листам"""
-        try:
-            if not sheets_data:
-                return "ℹ️ Файл не содержит данных для отчёта"
-
-            report = ["📊 ОБЪЕДИНЁННЫЙ ОТЧЁТ"]
-            total_turnover = 0
-            total_agent_payment = 0
-
-            for sheet_name, data in sheets_data.items():
-                sheet_report = ReportGenerator._generate_single_sheet(data)
-                report.append(sheet_report)
-                total_turnover += data.turnover or 0
-                total_agent_payment += data.agent_payment or 0
-
-            report.append(
-                "\n\n📌 ИТОГО ПО ФАЙЛУ:\n"
-                f"• Общий оборот: {ReportGenerator.format_number(total_turnover)} ₽\n"
-                f"• Суммарная выплата агентам: {ReportGenerator.format_number(total_agent_payment)} ₽\n"
-                f"• Выплата оператору (0.5%): {ReportGenerator.format_number(total_turnover * 0.005)} ₽"
+        if data.baibit:
+            report.append("\n\n📌 Выход Байбит:")
+            report.extend(
+                f"{i}. {ReportGenerator.format_number(t.amount)} ({t.rate})"
+                for i, t in enumerate(data.baibit, 1)
             )
 
-            return "\n".join(report)
-        except Exception as e:
-            logger.critical(f"Критическая ошибка генерации отчёта: {e}", exc_info=True)
-            return "⚠️ Произошла критическая ошибка при формировании отчёта"
+        report.extend([
+            f"\n\nИтоги:",
+            f"Оборот: {ReportGenerator.format_number(data.turnover)}",
+            f"Оплата агента ({data.agent_percent}%): {ReportGenerator.format_number(data.agent_payment)}",
+            f"Оплата оператора (0.5%): {ReportGenerator.format_number(data.operator_payment)}",
+            f"Общие комиссии: {ReportGenerator.format_number(sum(t.commission for t in data.outflows))}",
+            f"Стоп баланс: {ReportGenerator.format_number(data.stop_balance)}",
+            f"Тг: {data.operator or 'Нет данных'}",
+            "=" * 40
+        ])
+
+        return "\n".join(report)

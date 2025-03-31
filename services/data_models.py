@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import List
+from typing import List, Tuple
 
 @dataclass
 class Transaction:
@@ -14,7 +14,6 @@ class BaibitTransaction:
 
 @dataclass
 class ExcelSheetData:
-    sheet_name: str  # Добавляем этот атрибут
     full_name: str
     bank: str
     warm_up_purchases: int
@@ -27,8 +26,8 @@ class ExcelSheetData:
     inflows: List[Transaction]
     outflows: List[Transaction]
     baibit: List[BaibitTransaction]
-    agent_percent: float
     turnover: float = 0
+    agent_percent: float = 0
     agent_payment: float = 0
     operator_payment: float = 0
 
