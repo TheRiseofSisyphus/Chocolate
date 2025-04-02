@@ -39,5 +39,7 @@ services:
     volumes:
       - ./storage:/app/storage
 
+      - ./migrations:/app/migrations
+
 volumes:
   pg_data:
