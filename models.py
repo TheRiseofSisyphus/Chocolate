@@ -89,7 +89,7 @@ class AgentBankAccounts(Base):
     bank_name = Column(String(255), nullable=False)
     card_number = Column(String(50), nullable=False)
     account_number = Column(String(100), nullable=True)
-    iban = Column(String(100), nullable=True)
+    banned = Column(String(100), nullable=True)
     is_active = Column(Boolean, default=True)
 
     agent = relationship("Agents", back_populates="bank_accounts")

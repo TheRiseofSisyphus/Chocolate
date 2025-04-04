@@ -8,7 +8,7 @@ from services.file_manager import FileManager
 from services.excel_processor import ExcelProcessor
 from services.report_generator import ReportGenerator
 from services.session_manager import SessionManager
-
+from  services.db_functions import save_excel_data
 
 from pathlib import Path
 
@@ -97,6 +97,19 @@ class BotHandler:
 
             # Парсинг и обработка данных
             sheets_data = ExcelProcessor.process_workbook(file_path, self.current_agent_percent)
+            for sheet_name, sheet_data in sheets_data.items():
+                sheet_data.sheet_name = sheet_name
+
+                # 💾 Сохраняем данные в БД
+                try:
+                    save_excel_data(sheet_data)
+                except Exception as db_error:
+                    logger.error(f"Ошибка при сохранении в БД: {db_error}")
+                    await message.answer(
+                        f"⚠️ Ошибка при сохранении данных из листа {sheet_name}. Проверьте файл или обратитесь к администратору.",
+                        reply_markup=self.main_keyboard
+                    )
+                    continue
 
             full_report = ""
             file_operator_total = 0
